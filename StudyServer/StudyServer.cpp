@@ -5,22 +5,22 @@ using namespace std;
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 
-#define AddressFamily AF_INET
-#define IPAddress "127.0.0.1"
-#define PORT 7777
-
 int main()
 {
+    printf("============ SERVER ===========\n");
+
     WORD wVersionRequested; //서버가 사용할 수 있는 Windows 소켓 버전 설정
     WSAData wsaData; //Windows 소켓 구현에 대한 정보 받기 위해
 
     wVersionRequested = MAKEWORD(2, 2); //버전 만들어서 넣어줌
 
-    if (WSAStartup(wVersionRequested, &wsaData) != 0) {
+    if (WSAStartup(wVersionRequested, &wsaData) != 0)
+    {
         printf("WSAStartup Failed with error\n");
         return 1;
     }
 
+    //TCP
     SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (listenSocket == INVALID_SOCKET)
@@ -30,27 +30,32 @@ int main()
         return 1;
     }
 
-    printf("socket function succeeded\n");
+    u_long iMode = 1;
+    if (ioctlsocket(listenSocket, FIONBIO, &iMode) == INVALID_SOCKET)
+    {
+        printf("ioctlsocket failed %d\n", WSAGetLastError());
+        closesocket((listenSocket));
+        WSACleanup();
+        return 1;
+    }
 
-    //Todo
     SOCKADDR_IN service; //memset(start address, value, size) 0으로 구조체(service)를 초기화
     memset(&service, 0, sizeof(service));
+    service.sin_family = AF_INET; // Address Family : IPv4
+    service.sin_addr.s_addr = htonl(INADDR_ANY);
+    service.sin_port = htons(7777);
 
-    service.sin_family = AddressFamily; // Address Family : IPv4
-    inet_pton(AF_INET, IPAddress, &service.sin_addr);
-    service.sin_port = htons(PORT);
-
-    if (bind(listenSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) //listenSocket(전화기)에 SOCKADDR(등록정보)를 등록
+    if (bind(listenSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
     {
-        printf("bind function failed %d\n", WSAGetLastError());
+        printf("bind failed with error %d\n", WSAGetLastError());
         closesocket(listenSocket);
         WSACleanup();
         return 1;
     }
 
-    if (listen(listenSocket, 10) == SOCKET_ERROR) //listen 에 몇명 대기할껀지
+    if (listen(listenSocket, 10) == SOCKET_ERROR)
     {
-        printf("listen function failed %d\n", WSAGetLastError());
+        printf("listen failed %d\n", WSAGetLastError());
         closesocket(listenSocket);
         WSACleanup();
         return 1;
@@ -58,20 +63,41 @@ int main()
 
     while (true)
     {
-        printf("listening...\n");
-        SOCKET acceptSocket = accept(listenSocket, NULL, NULL); //클라이언트 접속시 클라이언트랑 연락할 소켓을 반환, 클라이언트가 접속할때까지 대기 (동기함수)
-        
+        system("cls");
+        printf("listening...");
+
+        SOCKET acceptSocket = accept(listenSocket, NULL, NULL);
         if (acceptSocket == INVALID_SOCKET)
         {
-            printf("accept function failed %d\n", WSAGetLastError());
-            closesocket(acceptSocket);
-            WSACleanup();
-            return 1;
-        }
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+            {
+                continue;
+            }
 
-        printf("Client connected\n");
+            break;
+        }
+        printf("Client Connected.\n");
+
+        while (true)
+        {
+            char recvBuffer[512];
+            int recvLen = recv(acceptSocket, recvBuffer, sizeof(recvBuffer), 0);
+
+            if (recvLen == SOCKET_ERROR)
+            {
+                if (WSAGetLastError() == WSAEWOULDBLOCK)
+                {
+                    continue;
+                }
+                break;
+            } else if (recvLen == 0)
+            {
+                break;
+            }
+            printf("Recv Data : %s\n", recvBuffer);
+        }
     }
-    
+
     closesocket(listenSocket);
     WSACleanup();
     return 0;

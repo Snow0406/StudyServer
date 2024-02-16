@@ -8,174 +8,221 @@ using namespace std;
 
 struct Session
 {
-	SOCKET sock = INVALID_SOCKET;
-	char recvBuffer[512] = {};
-	int recvLen = 0;
-	int sendLen = 0;
+    SOCKET sock = INVALID_SOCKET;
+    char recvBuffer[512] = {};
+    int recvLen = 0;
+    int sendLen = 0;
 };
 
 int main()
 {
-	printf("============ SERVER ===========\n");
+    printf("============ SERVER ===========\n");
 
-	WORD wVersionRequested; //¼­¹ö°¡ »ç¿ëÇÒ ¼ö ÀÖ´Â Windows ¼ÒÄÏ ¹öÀü ¼³Á¤ // NOLINT(clang-diagnostic-invalid-utf8)
-	WSAData wsaData; //Windows ¼ÒÄÏ ±¸Çö¿¡ ´ëÇÑ Á¤º¸ ¹Ş±â À§ÇØ // NOLINT(clang-diagnostic-invalid-utf8)
+    WORD wVersionRequested; //ì„œë²„ê°€ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” Windows ì†Œì¼“ ë²„ì „ ì„¤ì • // NOLINT(clang-diagnostic-invalid-utf8)
+    WSAData wsaData; //Windows ì†Œì¼“ êµ¬í˜„ì— ëŒ€í•œ ì •ë³´ ë°›ê¸° ìœ„í•´ // NOLINT(clang-diagnostic-invalid-utf8)
 
-	wVersionRequested = MAKEWORD(2, 2); //¹öÀü ¸¸µé¾î¼­ ³Ö¾îÁÜ // NOLINT(clang-diagnostic-invalid-utf8)
+    wVersionRequested = MAKEWORD(2, 2); //ë²„ì „ ë§Œë“¤ì–´ì„œ ë„£ì–´ì¤Œ // NOLINT(clang-diagnostic-invalid-utf8)
 
-	if (WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		printf("WSAStartup Failed with error\n");
-		return 1;
-	}
+    if (WSAStartup(wVersionRequested, &wsaData) != 0)
+    {
+        printf("WSAStartup Failed with error\n");
+        return 1;
+    }
 
-	//TCP
-	SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+    //TCP
+    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (listenSocket == INVALID_SOCKET)
-	{
-		printf("socket function failed %d\n", WSAGetLastError());
-		WSACleanup();
-		return 1;
-	}
+    if (listenSocket == INVALID_SOCKET)
+    {
+        printf("socket function failed %d\n", WSAGetLastError());
+        WSACleanup();
+        return 1;
+    }
 
-	u_long iMode = 1;
-	if (ioctlsocket(listenSocket, FIONBIO, &iMode) == INVALID_SOCKET)
-	{
-		printf("ioctlsocket failed %d\n", WSAGetLastError());
-		closesocket((listenSocket));
-		WSACleanup();
-		return 1;
-	}
+    u_long iMode = 1;
+    if (ioctlsocket(listenSocket, FIONBIO, &iMode) == INVALID_SOCKET)
+    {
+        printf("ioctlsocket failed %d\n", WSAGetLastError());
+        closesocket((listenSocket));
+        WSACleanup();
+        return 1;
+    }
 
-	SOCKADDR_IN service;
-	//memset(start address, value, size) 0À¸·Î ±¸Á¶Ã¼(service)¸¦ ÃÊ±âÈ­ // NOLINT(clang-diagnostic-invalid-utf8)
-	memset(&service, 0, sizeof(service));
-	service.sin_family = AF_INET; // Address Family : IPv4
-	service.sin_addr.s_addr = htonl(INADDR_ANY);
-	service.sin_port = htons(7777);
+    SOCKADDR_IN service;
+    //memset(start address, value, size) 0ìœ¼ë¡œ êµ¬ì¡°ì²´(service)ë¥¼ ì´ˆê¸°í™” // NOLINT(clang-diagnostic-invalid-utf8)
+    memset(&service, 0, sizeof(service));
+    service.sin_family = AF_INET; // Address Family : IPv4
+    service.sin_addr.s_addr = htonl(INADDR_ANY);
+    service.sin_port = htons(7777);
 
-	if (bind(listenSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
-	{
-		printf("bind failed with error %d\n", WSAGetLastError());
-		closesocket(listenSocket);
-		WSACleanup();
-		return 1;
-	}
+    if (bind(listenSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
+    {
+        printf("bind failed with error %d\n", WSAGetLastError());
+        closesocket(listenSocket);
+        WSACleanup();
+        return 1;
+    }
 
-	if (listen(listenSocket, 10) == SOCKET_ERROR)
-	{
-		printf("listen failed %d\n", WSAGetLastError());
-		closesocket(listenSocket);
-		WSACleanup();
-		return 1;
-	}
+    if (listen(listenSocket, 10) == SOCKET_ERROR)
+    {
+        printf("listen failed %d\n", WSAGetLastError());
+        closesocket(listenSocket);
+        WSACleanup();
+        return 1;
+    }
 
-	printf("listening...");
-
-	//Á¢¼ÓÇÒ ¼ÒÄÏÀ» ´ãÀ» ±¸Á¶Ã¼ // NOLINT(clang-diagnostic-invalid-utf8)
-	vector<Session> sessions;
-
-	fd_set reads;
-	fd_set writes;
-
-	//Socket sock;
-	//fd_set set;
-	//FD_ZERO : ºó ÁıÇÕÀ» ÃÊ±âÈ­. ex) FD_ZERO(set); // NOLINT(clang-diagnostic-invalid-utf8)
-	//FD_CLR  : ÁıÇÕ¿¡¼­ ¼ÒÄÏÀ» Á¦°Å. ex) FD_CLR(sock, &set); // ÇØ´ç ¼ÒÄÏÀ» ÇØ´ç ÁıÇÕ¿¡¼­ Á¦°Å // NOLINT(clang-diagnostic-invalid-utf8)
-	//FD_ISSET: ÇØ´ç ¼ÒÄÏÀÌ ÁıÇÕÀÇ ¸É¹öÀÎÁö È®ÀÎ, set¿¡ µé¾î°¡ ÀÖÀ¸¸é TRUE¸¦ ¹İÈ¯, ex) FD_ISSET(sock, &set); // NOLINT(clang-diagnostic-invalid-utf8)
-	//FD_SET  : ¼ÒÄÏÀ» Ãß°¡. ex) FD_SET(sock, &set); //ÇØ´ç set¿¡ sock Ãß°¡ // NOLINT(clang-diagnostic-invalid-utf8)
-
-	while (true)
-	{
-		FD_ZERO(&reads); //reads¸¦ ÃÊ±âÈ­ // NOLINT(clang-diagnostic-invalid-utf8)
-		FD_ZERO(&writes);
-
-		for (Session& session : sessions)
-		{
-			if (session.recvLen <= session.sendLen)
-			{
-				FD_SET(session.sock, &reads);
-			}
-			else FD_SET(session.sock, &writes);
-
-			FD_SET(listenSocket, &reads);
-				FD_SET(listenSocket, &writes);
-		}
-
-		FD_SET(listenSocket, &reads); //listen ¼ÒÄÏµµ reads¿¡ µî·Ï -> Å¬¶ó¿¡¼­µµ connect  // NOLINT(clang-diagnostic-invalid-utf8)
+    printf("listening...");
 
 
-		//µî·ÏµÈ ¾ÖµéÁß¿¡ send¸¦ Çß°Å³ª »õ·Î¿î Å¬¶ó°¡ connect¸¦ ÇßÀ»‹š // NOLINT(clang-diagnostic-invalid-utf8)
-		//°ªÀÌ ÀÖÀ¸¸é ¹ñ¾î³¿ -> reads¿¡ µî·ÏµÈ ¾ÖµéÁß¿¡ ÀÌº¥Æ®°¡ ÀÖÀ¸¸é // NOLINT(clang-diagnostic-invalid-utf8)
-		if (select(0, &reads, &writes, nullptr, nullptr) == SOCKET_ERROR)
-		{
-			printf("select Error %d\n", WSAGetLastError());
-			closesocket(listenSocket);
-			WSACleanup();
-			return 1;
-		}
+    //Eventì™€ Socketì„ ë‹´ì„ vectorë¥¼ í• ë‹¹
+    //1(SOCKET) + 1(WSAEVENT)ì´ë¼ ê°™ì´ ì›€ì§ì¸ë‹¤ê³  ìƒê°í•˜ë©´ ë¨.
+    vector<SOCKET> sockets;
+    vector<WSAEVENT> wsaEvents;
 
-		if (FD_ISSET(listenSocket, &reads)) //ÇöÀç reads¿¡ ÀÖÀ½? // NOLINT(clang-diagnostic-invalid-utf8)
-		{
-			SOCKET acceptSocket = accept(listenSocket, nullptr, nullptr);
-			Session session;
-			session.sock = acceptSocket;
+    sockets.push_back(listenSocket);
 
-			sessions.push_back(session);
-			printf("Client Connected.\n");
-		}
+    //WSACreateEventë¡œ listenSocketì´ë‘ ê°™ì´ ë™ì‘í•  ì´ë²¤íŠ¸ ê°ì²´ ë§Œë“¬
+    WSAEVENT listenEvent = WSACreateEvent();
 
-		for (Session& session : sessions)
-		{
-			//ÇØ´ç ¼ÒÄÏÀÌ ¹«¾ğ°¡¸¦ º¸³Â´Ù¸é reads¿¡ µî·Ï µÇ¾î ÀÖÀ»²¨°í
-			//FE_ISSETÀº ÇØ´ç ¼ÒÄÏÀÌ µî·ÏµÇ¾î ÀÖ´ÂÁö ¾ø´ÂÁö¸¸ Ã¼Å©
-			if (FD_ISSET(session.sock, &reads))
-			{
+    //í•´ë‹¹ listenEventë¥¼ wsaEvents vectorì— ë“±ë¡
+    wsaEvents.push_back(listenEvent);
 
-				//Non blocking recv <- ¿©±â ±îÁö ¿Ô´Ù´Â°Ç select ³Ñ¾î¿Í¼­ reads¿¡ µî·ÏµÇ¾î ÀÖÀ¸´Ï
-				//ÁØºñ°¡ µÇ¾î ÀÖ´Â »óÅÂ
-				int recvLen = recv(session.sock, session.recvBuffer, sizeof(session.recvBuffer), 0);
+    //ì†Œì¼“ê³¼ ì´ë²¤íŠ¸ë¥¼ ì—°ë™
+    //í•´ë‹¹ ì†Œì¼“ê³¼ ì´ë²¤íŠ¸ë¥¼ 1ëŒ€1ë¡œ WSAEventSelectì— ë„£ì–´ì¤Œ
+    //ì´ë²¤íŠ¸ ê°ì‹œí• êº¼ ì„¤ì • í•´ì¤Œ
+    //listenSocket í•˜ëŠ” ì—­í• ì´ accept & ì ‘ì† ëŠê²¼ì„ë–„ ì²˜ë¦¬
+    //FD_ACCEPT : ì ‘ì†í•œ í´ë¼ê°€ ìˆì–´ì„œ acceptí•¨ìˆ˜ë¥¼ ë°”ë¡œ í˜¸ì¶œ í• ìˆ˜ ìˆëŠ” ê²½ìš°ë¥¼ ê´€ì°°
+    //FD_CLOSE : ìƒëŒ€ê°€ ì ‘ì† ì¢…ë£Œ í–ˆì„ ê²½ìš° ê´€ì°°
+    if (WSAEventSelect(listenSocket, listenEvent, FD_ACCEPT | FD_CLOSE) == SOCKET_ERROR)
+    {
+        printf("WSAEventSelect Error %d\n", WSAGetLastError());
+        closesocket(listenSocket);
+        WSACleanup();
+        return 1;
+    }
+    //Socket sock;
+    //fd_set set;
+    //FD_ZERO : ë¹ˆ ì§‘í•©ì„ ì´ˆê¸°í™”. ex) FD_ZERO(set); // NOLINT(clang-diagnostic-invalid-utf8)
+    //FD_CLR  : ì§‘í•©ì—ì„œ ì†Œì¼“ì„ ì œê±°. ex) FD_CLR(sock, &set); // í•´ë‹¹ ì†Œì¼“ì„ í•´ë‹¹ ì§‘í•©ì—ì„œ ì œê±° // NOLINT(clang-diagnostic-invalid-utf8)
+    //FD_ISSET: í•´ë‹¹ ì†Œì¼“ì´ ì§‘í•©ì˜ ë§´ë²„ì¸ì§€ í™•ì¸, setì— ë“¤ì–´ê°€ ìˆìœ¼ë©´ TRUEë¥¼ ë°˜í™˜, ex) FD_ISSET(sock, &set); // NOLINT(clang-diagnostic-invalid-utf8)
+    //FD_SET  : ì†Œì¼“ì„ ì¶”ê°€. ex) FD_SET(sock, &set); //í•´ë‹¹ setì— sock ì¶”ê°€ // NOLINT(clang-diagnostic-invalid-utf8)
 
-				//º¸³Â±ä Çß´Âµ¥ °ªÀÌ ¾øÀ¸¸é
-				if (recvLen <= 0)
-				{
-					//ÇØ´ç ¼ÒÄÏÀ» ³¯¸²
-					//sockets.erase(remove(sockets.begin(), sockets.end(), sock), sockets.end());
-					continue;
-				}
+    while (true)
+    {
+        //WSAWaitForMultipleEvents :ì—¬ëŸ¬ ì´ë²¤íŠ¸ ê°ì‹œ
+        //cEvents : ì´ë²¤íŠ¸ ê°¯ìˆ˜
+        //lphEvents : ì´ë²¤íŠ¸ ë°°ì—´ì˜ ì‹œì‘ ì£¼ì†Œ
+        //fWaitAll : (true)ëª¨ë“  ì´ë²¤íŠ¸ë“¤ì„ ê¸°ë‹¤ë¦´ê²ƒì¸ì§€, (False)ì¤€ë¹„ ë˜ëŠ” ëŒ€ë¡œ ê°’ì„ ë°˜í™˜í• ê²ƒì¸ì§€
+        //dwTimeout : ì´ë²¤íŠ¸ ê¸°ë‹¤ë¦¬ëŠ” ì‹œê°„
+        //fAlertable : ìŠ¤ë ˆë“œ ê²½êµ¬ ê°€ëŠ¥í•œ ëŒ€ê¸° ìƒíƒœì— ë°°ì¹˜ë˜ëŠ”ì§€ ì—¬ë¶€ë¥¼ ì €ì¥í•˜ëŠ” ê°’
 
-				session.recvLen = recvLen;
-				printf("Recv Data : %s\n", session.recvBuffer);
-			}
+        //wsaEvents.size() : ì´ë²¤íŠ¸ ê°¯ìˆ˜ listenEvent + í´ë¼ì™€ ì—°ê²°í•œ ì†Œì¼“ê³¼ 1+1ì¸ ì´ë²¤íŠ¸ë¥¼...
+        //&wsaEvents[0] : vector ë°°ì—´ í˜•ì‹ì´ë‹ˆê¹, í•´ë‹¹ ë°°ì—´ì˜ ì‹œì‘ ì£¼ì†Œ.
+        //FALSE : ì¤€ë¹„ë˜ëŠ” ì¡±ì¡± ë°˜í™˜
+        //WSA_INFINITE : ë¬´í•œìœ¼ë¡œ ê¸°ë‹¤ë¦¼
+        //FALSE : ê°’ ì„¤ì • ì•ˆí•¨
+        DWORD index = WSAWaitForMultipleEvents(wsaEvents.size(), &wsaEvents[0], FALSE, WSA_INFINITE, FALSE);
 
-			//write¿¡ ÇØ´ç socketÀÌ ÀÖ´Ù¸é
-			if (FD_ISSET(session.sock, &writes))
-			{
-				char sendBuffer[] = "hello this is server !!!!";
+        if (index == WSA_WAIT_FAILED)
+        {
+            continue;
+        }
 
-				int sendLen = send(session.sock, sendBuffer, sizeof(sendBuffer), 0);
+        //WSAWaitForMultipleEvents ë°˜í™˜ê°’ == STATUS_WAIT_0  ((DWORD   )0x00000000L) + wsaEventsë²¡í„°ì—ì„œ ë°œìƒí•œ ì´ë²¤íŠ¸ ì¸ë±ìŠ¤ ê°’
+        //ì •í™•í•œ ì¸ë±ìŠ¤ ê°’ì„ ì–»ì–´ ë‚´ê¸° ìœ„í•´ì„œ WSA_WAIT_EVENT_0ê°’ì„ ë¹¼ì¤˜ì•¼ í•¨
+        index -= WSA_WAIT_EVENT_0;
 
-				if (sendLen == SOCKET_ERROR)
-				{
-					//sockets.erase(remove(sockets.begin(), sockets.end(), sock), sockets.end());
-					continue;
-				}
+        WSANETWORKEVENTS networkEvents;
 
-				session.sendLen = sendLen;
-				if (session.sendLen == session.recvLen)
-				{
-					session.sendLen = 0;
-					session.recvLen = 0;
-				}
+        //WSAEnumNetworkEvents : ì†Œì¼“ê³¼ ì´ë²¤íŠ¸ê°€ ì–´ë–¤ ìƒíƒœì¸ì§€ í™•ì¸ í•˜ê¸° ìœ„í•´ì„œ
+        //ì´ë²¤íŠ¸ëŠ” ë°œìƒí•œê±°ê³  ì–´ëŠ indexì—ì„œ ë°œìƒí•œê±´ ì•„ë‹ˆê¹Œ
+        //[in] s : ì†Œì¼“
+        //[in] hEventObject : ì´ë²¤íŠ¸
+        //[out] lpNetworkEvents : ê°œì²´ ì‹ë³„í•˜ê¸° ìœ„í•œ í•¸ë“¤
+        if (WSAEnumNetworkEvents(sockets[index], wsaEvents[index], &networkEvents) == SOCKET_ERROR)
+        {
+            continue;
+        }
+        
+#pragma region ACCEPT
+        
+        //listenSocket ì²´í¬
+        //í•´ë‹¹ ì†Œì¼“ì´ acceptí•  ì¤€ë¹„ê°€ ëë‚¬ë‹¤ë©´
+        //networkEvents ì´ë²¤íŠ¸ ê¹Œì„œ
+        //&ë¹„íŠ¸ ì—°ì‚°ìœ¼ë¡œ ì²´í¬
+        if (networkEvents.lNetworkEvents & FD_ACCEPT)
+        {
+            //ì—ëŸ¬ì²´í¬
+            //ë¹„íŠ¸ê°’ì„ ì´ìš©í•´ì„œ ì—ëŸ¬ ì²´í¬
+            if (networkEvents.iErrorCode[FD_ACCEPT_BIT] != 0)
+            {
+                continue;
+            }
+            //ì†ë‹˜ì„ ë°”ë¡œ ë°›ìŒ ë¨
+            SOCKET acceptSocket = accept(listenSocket, NULL, NULL);
 
-				printf("Send Buffer Length : %d byte \n", sendLen);
-			}
-		}
-	}
+            //acceptSocketì´ INVALID_SOCKETì´ ì•„ë‹ˆë¼ë©´ ì •ìƒì´ë‹ˆê¹Œ
+            if (acceptSocket != INVALID_SOCKET)
+            {
+                printf("Client Connected...");
+                sockets.push_back(acceptSocket);
 
+                //accpetEvent ëŒ€ì‘ í•  ì´ë²¤íŠ¸ í•˜ë‚˜ ë§Œë“¦
+                WSAEVENT accpetEvent = WSACreateEvent();
 
-	closesocket(listenSocket);
-	WSACleanup();
-	return 0;
+                //1 + 1ìœ¼ë¡œ í•´ë‹¹ ì´ë²¤íŠ¸ì˜¤ wsaEvnets vectorì— ì¶”ê°€
+                wsaEvents.push_back(accpetEvent);
+
+                //í•´ë‹¹ acceptSocket ì´ë²¤íŠ¸ë¥¼ ê´€ì°°í• ìˆ˜ ìˆê²Œ
+                //FD_READ : recv, recvfrom í•¨ìˆ˜ í˜¸ì¶œ í• ìˆ˜ ìˆëŠ” ê²½ìš° ê´€ì°°
+                //FD_WRITE : send, sendto í•¨ìˆ˜ í˜¸ì¶œ í• ìˆ˜ ìˆëŠ” ê²½ìš° ê´€ì°°
+                //FD_CLOSE : ìƒëŒ€ê°€ ì ‘ì† ì¢…ë£Œ í–ˆì„ ê²½ìš° ê´€ì°°
+
+                if (WSAEventSelect(acceptSocket, accpetEvent, FD_READ | FD_WRITE | FD_CLOSE) == SOCKET_ERROR)
+                {
+                    printf("WSAEventSelect Error %d\n", WSAGetLastError());
+                    closesocket(acceptSocket);
+                    closesocket(listenSocket);
+                    WSACleanup();
+                    return 1;
+                }
+            }
+        }
+        
+#pragma endregion
+#pragma region READ
+        
+        if (networkEvents.lNetworkEvents & FD_READ)
+        {
+            if (networkEvents.iErrorCode[FD_READ_BIT] != 0)
+            {
+                continue;
+            }
+
+            //ì´ë²¤íŠ¸ê°€ ë°œìƒí•œ í•´ë‹¹ì†Œì¼“ì„ ì°¸ì¡°
+            SOCKET& sock = sockets[index];
+
+            //ë°ì´í„° ë°›ì„ ë²„í¼
+            char recvBuffer[512];
+            //ì¤€ë¹„ê°€ ë˜ì–´ ìˆìœ¼ë‹ˆ ë°”ë¡œ ë°›ìŒ ë¨
+            int recvLen = recv(sock, recvBuffer, sizeof(recvBuffer), 0);
+            //ì—ëŸ¬ ë°œìƒì‹œ
+            if (recvLen == SOCKET_ERROR)
+            {
+                //WSAEWOULDBLOCK ìƒíƒœê°€ ì•„ë‹ˆë©´ ë¬¸ì œê°€ ìˆëŠ”ê±°ë‹ˆê¹Œ
+                if (WSAGetLastError() != WSAEWOULDBLOCK)
+                {
+                 continue;   
+                }
+            }
+            printf("Recv Data : %s\n", recvBuffer);
+            
+        }
+        
+#pragma endregion
+        
+    }
+    closesocket(listenSocket);
+    WSACleanup();
+    return 0;
 }

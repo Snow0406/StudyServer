@@ -220,6 +220,50 @@ int main()
         }
         
 #pragma endregion
+#pragma region WRITE
+
+        //Write
+        //해당 이벤트가 FD_WRITE였을 경우
+        if (networkEvents.lNetworkEvents & FD_WRITE)
+        {
+            //FD_WRITE_BIT 값을 넣어서 문제 확인
+            if (networkEvents.iErrorCode[FD_WRITE_BIT] != 0)
+            {
+                continue;
+            }
+
+            SOCKET& sock = sockets[index];
+
+            char sendBuffer[] = "hello this is server";
+            int sendLen = send(sock, sendBuffer, sizeof(sendBuffer), 0);
+
+            if (sendLen == SOCKET_ERROR)
+            {
+                if (WSAGetLastError() != WSAEWOULDBLOCK)
+                {
+                    continue;
+                }
+            }
+
+            printf("Send Buffer Length : %d byte\n", sendLen);
+        }
+        
+#pragma endregion
+#pragma region CLOSE
+        if (networkEvents.lNetworkEvents & FD_CLOSE)
+        {
+            if (networkEvents.iErrorCode[FD_CLOSE_BIT] != 0)
+            {
+                continue;
+            }
+
+            sockets.erase(sockets.begin() + index);
+            wsaEvents.erase(wsaEvents.begin() + index);
+
+            printf("logout : %d\n", index);
+
+#pragma endregion
+        }
         
     }
     closesocket(listenSocket);

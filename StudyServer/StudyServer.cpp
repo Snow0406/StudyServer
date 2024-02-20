@@ -73,196 +73,67 @@ int main()
 
     printf("listening...");
 
-
-    //Event와 Socket을 담을 vector를 할당
-    //1(SOCKET) + 1(WSAEVENT)이라 같이 움직인다고 생각하면 됨.
-    vector<SOCKET> sockets;
-    vector<WSAEVENT> wsaEvents;
-
-    sockets.push_back(listenSocket);
-
-    //WSACreateEvent로 listenSocket이랑 같이 동작할 이벤트 객체 만듬
-    WSAEVENT listenEvent = WSACreateEvent();
-
-    //해당 listenEvent를 wsaEvents vector에 등록
-    wsaEvents.push_back(listenEvent);
-
-    //소켓과 이벤트를 연동
-    //해당 소켓과 이벤트를 1대1로 WSAEventSelect에 넣어줌
-    //이벤트 감시할꺼 설정 해줌
-    //listenSocket 하는 역할이 accept & 접속 끊겼을떄 처리
-    //FD_ACCEPT : 접속한 클라가 있어서 accept함수를 바로 호출 할수 있는 경우를 관찰
-    //FD_CLOSE : 상대가 접속 종료 했을 경우 관찰
-    if (WSAEventSelect(listenSocket, listenEvent, FD_ACCEPT | FD_CLOSE) == SOCKET_ERROR)
-    {
-        printf("WSAEventSelect Error %d\n", WSAGetLastError());
-        closesocket(listenSocket);
-        WSACleanup();
-        return 1;
-    }
-    //Socket sock;
-    //fd_set set;
-    //FD_ZERO : 빈 집합을 초기화. ex) FD_ZERO(set); // NOLINT(clang-diagnostic-invalid-utf8)
-    //FD_CLR  : 집합에서 소켓을 제거. ex) FD_CLR(sock, &set); // 해당 소켓을 해당 집합에서 제거 // NOLINT(clang-diagnostic-invalid-utf8)
-    //FD_ISSET: 해당 소켓이 집합의 맴버인지 확인, set에 들어가 있으면 TRUE를 반환, ex) FD_ISSET(sock, &set); // NOLINT(clang-diagnostic-invalid-utf8)
-    //FD_SET  : 소켓을 추가. ex) FD_SET(sock, &set); //해당 set에 sock 추가 // NOLINT(clang-diagnostic-invalid-utf8)
-
     while (true)
     {
-        //WSAWaitForMultipleEvents :여러 이벤트 감시
-        //cEvents : 이벤트 갯수
-        //lphEvents : 이벤트 배열의 시작 주소
-        //fWaitAll : (true)모든 이벤트들을 기다릴것인지, (False)준비 되는 대로 값을 반환할것인지
-        //dwTimeout : 이벤트 기다리는 시간
-        //fAlertable : 스레드 경구 가능한 대기 상태에 배치되는지 여부를 저장하는 값
+        SOCKET acceptSocket = INVALID_SOCKET;
 
-        //wsaEvents.size() : 이벤트 갯수 listenEvent + 클라와 연결한 소켓과 1+1인 이벤트를...
-        //&wsaEvents[0] : vector 배열 형식이니깐, 해당 배열의 시작 주소.
-        //FALSE : 준비되는 족족 반환
-        //WSA_INFINITE : 무한으로 기다림
-        //FALSE : 값 설정 안함
-        DWORD index = WSAWaitForMultipleEvents(wsaEvents.size(), &wsaEvents[0], FALSE, WSA_INFINITE, FALSE);
-
-        if (index == WSA_WAIT_FAILED)
+        while (true)
         {
-            continue;
-        }
+            //non-blocking으로 accept 실행
+            acceptSocket = accept(listenSocket, nullptr, nullptr);
 
-        //WSAWaitForMultipleEvents 반환값 == STATUS_WAIT_0  ((DWORD   )0x00000000L) + wsaEvents벡터에서 발생한 이벤트 인덱스 값
-        //정확한 인덱스 값을 얻어 내기 위해서 WSA_WAIT_EVENT_0값을 빼줘야 함
-        index -= WSA_WAIT_EVENT_0;
-
-        WSANETWORKEVENTS networkEvents;
-
-        //WSAEnumNetworkEvents : 소켓과 이벤트가 어떤 상태인지 확인 하기 위해서
-        //이벤트는 발생한거고 어느 index에서 발생한건 아니까
-        //[in] s : 소켓
-        //[in] hEventObject : 이벤트
-        //[out] lpNetworkEvents : 개체 식별하기 위한 핸들
-        if (WSAEnumNetworkEvents(sockets[index], wsaEvents[index], &networkEvents) == SOCKET_ERROR)
-        {
-            continue;
-        }
-        
-#pragma region ACCEPT
-        
-        //listenSocket 체크
-        //해당 소켓이 accept할 준비가 끝났다면
-        //networkEvents 이벤트 까서
-        //&비트 연산으로 체크
-        if (networkEvents.lNetworkEvents & FD_ACCEPT)
-        {
-            //에러체크
-            //비트값을 이용해서 에러 체크
-            if (networkEvents.iErrorCode[FD_ACCEPT_BIT] != 0)
+            if (acceptSocket == INVALID_SOCKET)
             {
-                continue;
-            }
-            //손님을 바로 받음 됨
-            SOCKET acceptSocket = accept(listenSocket, NULL, NULL);
-
-            //acceptSocket이 INVALID_SOCKET이 아니라면 정상이니까
-            if (acceptSocket != INVALID_SOCKET)
-            {
-                printf("Client Connected...");
-                sockets.push_back(acceptSocket);
-
-                //accpetEvent 대응 할 이벤트 하나 만듦
-                WSAEVENT accpetEvent = WSACreateEvent();
-
-                //1 + 1으로 해당 이벤트오 wsaEvnets vector에 추가
-                wsaEvents.push_back(accpetEvent);
-
-                //해당 acceptSocket 이벤트를 관찰할수 있게
-                //FD_READ : recv, recvfrom 함수 호출 할수 있는 경우 관찰
-                //FD_WRITE : send, sendto 함수 호출 할수 있는 경우 관찰
-                //FD_CLOSE : 상대가 접속 종료 했을 경우 관찰
-
-                if (WSAEventSelect(acceptSocket, accpetEvent, FD_READ | FD_WRITE | FD_CLOSE) == SOCKET_ERROR)
-                {
-                    printf("WSAEventSelect Error %d\n", WSAGetLastError());
-                    closesocket(acceptSocket);
-                    closesocket(listenSocket);
-                    WSACleanup();
-                    return 1;
-                }
-            }
-        }
-        
-#pragma endregion
-#pragma region READ
-        
-        if (networkEvents.lNetworkEvents & FD_READ)
-        {
-            if (networkEvents.iErrorCode[FD_READ_BIT] != 0)
-            {
-                continue;
-            }
-
-            //이벤트가 발생한 해당소켓을 참조
-            SOCKET& sock = sockets[index];
-
-            //데이터 받을 버퍼
-            char recvBuffer[512];
-            //준비가 되어 있으니 바로 받음 됨
-            int recvLen = recv(sock, recvBuffer, sizeof(recvBuffer), 0);
-            //에러 발생시
-            if (recvLen == SOCKET_ERROR)
-            {
-                //WSAEWOULDBLOCK 상태가 아니면 문제가 있는거니까
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
-                {
-                 continue;   
-                }
-            }
-            printf("Recv Data : %s\n", recvBuffer);
-            
-        }
-        
-#pragma endregion
-#pragma region WRITE
-
-        //Write
-        //해당 이벤트가 FD_WRITE였을 경우
-        if (networkEvents.lNetworkEvents & FD_WRITE)
-        {
-            //FD_WRITE_BIT 값을 넣어서 문제 확인
-            if (networkEvents.iErrorCode[FD_WRITE_BIT] != 0)
-            {
-                continue;
-            }
-
-            SOCKET& sock = sockets[index];
-
-            char sendBuffer[] = "hello this is server";
-            int sendLen = send(sock, sendBuffer, sizeof(sendBuffer), 0);
-
-            if (sendLen == SOCKET_ERROR)
-            {
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
+                if (WSAGetLastError() == WSAEWOULDBLOCK)
                 {
                     continue;
                 }
-            }
 
-            printf("Send Buffer Length : %d byte\n", sendLen);
-        }
-        
-#pragma endregion
-#pragma region CLOSE
-        if (networkEvents.lNetworkEvents & FD_CLOSE)
-        {
-            if (networkEvents.iErrorCode[FD_CLOSE_BIT] != 0)
+                closesocket(listenSocket);
+                WSACleanup();
+                return 1;
+            }
+            else
             {
-                continue;
+                printf("Client Connected\n");
+                break;
             }
+        }
 
-            sockets.erase(sockets.begin() + index);
-            wsaEvents.erase(wsaEvents.begin() + index);
+        //WSARecv
+        //s : 소켓. 위에 acceptSocket 넣어 주면됨
+        //lpBuffers : WSABUF 구조체 배열의대한 포인터
+        //dwBufferCount : WSABUF 구조체 갯수
+        //lpNumberOfBytesRecvd : 수신 완료 후 받은 바이트에 대한 포인터
+        //lpFlages : 플래그
+        //lpOverlapped : WSAOVERLAPPED 구조체 대한 포인터
+        //lpCompletionRoutine : 수신 완료 후 호출되는 콜백함수
+        
+        WSAOVERLAPPED overrlapped = {};
+        WSAEVENT wsaEvent = WSACreateEvent(); //비동기 작업을
+        overrlapped.hEvent = wsaEvent; //WSAOVERLAPPED 구조체에 있는 hEvent에 객체 연결
 
-            printf("logout : %d\n", index);
+        char recvBuffer[512];
 
-#pragma endregion
+        while (true)
+        {
+            WSABUF wsaBuf; //WSABUF 구조체 선언, WSARecv 함수에 사용될 버퍼를 관리
+wsaBuf.buf = recvBuffer; //버퍼 포인터를 recvBuffer로 설정
+            wsaBuf.len = sizeof(recvBuffer); //버퍼 크기 설정
+
+            DWORD recvLen = 0;
+            DWORD flags = 0; //플래그 변수, 현재는 사용하지 않음
+
+            if (WSARecv(acceptSocket, &wsaBuf, 1, &recvLen, &flags, &overrlapped, nullptr)) //WSARecv 함수를 아용해 비동기적으로 데이터를 수신 요청
+            {
+                if (WSAGetLastError() == WSA_IO_PENDING)
+                {
+                    WSAWaitForMultipleEvents(1, &wsaEvent, TRUE, WSA_INFINITE, FALSE);
+                    //완료된 비동기 작업을 가져옴. 이 과정에서 실제로 데이터가 수신됨
+                    WSAGetOverlappedResult(acceptSocket, &overrlapped, &recvLen, FALSE, &flags);
+                }
+            }
+            
         }
         
     }

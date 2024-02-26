@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StudyServer", "StudyServer\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameClient", "GameClient\GameClient.vcxproj", "{190D4A5B-4C04-4ED7-BF79-1B663439F6CB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ServerCore", "ServerCore\ServerCore.vcxproj", "{44F17FCD-127F-4A81-914D-AF94C5A7D126}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{190D4A5B-4C04-4ED7-BF79-1B663439F6CB}.Release|x64.Build.0 = Release|x64
 		{190D4A5B-4C04-4ED7-BF79-1B663439F6CB}.Release|x86.ActiveCfg = Release|Win32
 		{190D4A5B-4C04-4ED7-BF79-1B663439F6CB}.Release|x86.Build.0 = Release|Win32
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Debug|x64.ActiveCfg = Debug|x64
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Debug|x64.Build.0 = Debug|x64
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Debug|x86.ActiveCfg = Debug|Win32
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Debug|x86.Build.0 = Debug|Win32
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Release|x64.ActiveCfg = Release|x64
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Release|x64.Build.0 = Release|x64
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Release|x86.ActiveCfg = Release|Win32
+		{44F17FCD-127F-4A81-914D-AF94C5A7D126}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

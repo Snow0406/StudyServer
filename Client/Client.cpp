@@ -117,7 +117,7 @@ int main()
 	memset(&localService, 0, sizeof(localService));
 	localService.sin_family = AF_INET;
 	localService.sin_addr.s_addr = htonl(INADDR_ANY);
-	localService.sin_port = htons(0); 
+	localService.sin_port = htons(0);
 
 
 	if (bind(connectSocket, (SOCKADDR*)&localService, sizeof(localService)) == SOCKET_ERROR)

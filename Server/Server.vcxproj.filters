@@ -13,21 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\pch">
-      <UniqueIdentifier>{0f40ef18-cac3-446e-b0f4-435a7907998e}</UniqueIdentifier>
+    <Filter Include="pch">
+      <UniqueIdentifier>{982b9bb5-2bd0-4e98-9b6d-cee7671637d2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="StudyServer.cpp">
+    <ClCompile Include="Server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>Header Files\pch</Filter>
+      <Filter>pch</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
-      <Filter>Header Files\pch</Filter>
+      <Filter>pch</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

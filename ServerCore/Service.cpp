@@ -1,14 +1,10 @@
 #include "pch.h"
 #include "Service.h"
+#include "SocketHelper.h"
 
 Service::Service(wstring ip, u_short port)
 {
-	WSAData wsaData;
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-	{
-		printf("WSAStartup failed with error\n");
-		return;
-	}
+	SocketHelper::StartUp();
 
 	memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.sin_family = AF_INET;
@@ -22,5 +18,5 @@ Service::Service(wstring ip, u_short port)
 
 Service::~Service()
 {
-	WSACleanup();
+	SocketHelper::CleanUp();
 }

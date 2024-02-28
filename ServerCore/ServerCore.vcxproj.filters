@@ -21,6 +21,9 @@
     <ClInclude Include="Listener.h">
       <Filter>NetWork</Filter>
     </ClInclude>
+    <ClInclude Include="SocketHelper.h">
+      <Filter>NetWork</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -33,6 +36,9 @@
       <Filter>pch</Filter>
     </ClCompile>
     <ClCompile Include="Listener.cpp">
+      <Filter>NetWork</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketHelper.cpp">
       <Filter>NetWork</Filter>
     </ClCompile>
   </ItemGroup>

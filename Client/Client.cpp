@@ -170,6 +170,11 @@ int main()
 
 	}
 
+	while (true)
+	{
+
+	}
+
 
 	t.join();
 

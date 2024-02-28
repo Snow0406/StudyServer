@@ -155,6 +155,7 @@
     <ClInclude Include="Listener.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Service.h" />
+    <ClInclude Include="SocketHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CorePch.cpp" />
@@ -166,6 +167,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Service.cpp" />
+    <ClCompile Include="SocketHelper.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

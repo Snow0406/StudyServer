@@ -2,6 +2,8 @@
 class SocketHelper
 {
 public:
+	static LPFN_ACCEPTEX AcceptEx;
+public:
 	static bool StartUp();
 	static void CleanUp();
 public:

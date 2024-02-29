@@ -24,6 +24,12 @@
     <ClInclude Include="SocketHelper.h">
       <Filter>NetWork</Filter>
     </ClInclude>
+    <ClInclude Include="IocpCore.h">
+      <Filter>NetWork</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>NetWork</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -39,6 +45,12 @@
       <Filter>NetWork</Filter>
     </ClCompile>
     <ClCompile Include="SocketHelper.cpp">
+      <Filter>NetWork</Filter>
+    </ClCompile>
+    <ClCompile Include="IocpCore.cpp">
+      <Filter>NetWork</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
       <Filter>NetWork</Filter>
     </ClCompile>
   </ItemGroup>

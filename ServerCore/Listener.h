@@ -8,12 +8,12 @@ private:
 	LPFN_ACCEPTEX lpfnAcceptEx = NULL;
 	GUID GuidAcceptEx = WSAID_ACCEPTEX;
 public:
-	Listener();
+	Listener() = default;
 	~Listener();
 public:
 	HANDLE GetHandle() { return iocpHandle; }
 public:
-	bool StartAccept(class Service& service);
+	bool StartAccept(class Service* service);
 	void CloseSocket();
 };
 

@@ -1,11 +1,18 @@
 #include "pch.h"
 #include "SocketHelper.h"
 
+LPFN_ACCEPTEX SocketHelper::AcceptEx = NULL;
+
 bool SocketHelper::StartUp()
 {
     WSAData wsaData;
     return WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
     // != 0 == error : return false; not error: return true;
+
+    SOCKET tempSocklet = CreateSocket();
+    SetIOControl(tempSocklet, WSAID_ACCEPTEX, (LPVOID*)&AcceptEx);
+    CloseSocket(tempSocklet);
+    return true;
 }
 
 void SocketHelper::CleanUp()

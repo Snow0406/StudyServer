@@ -2,18 +2,15 @@
 #include "Listener.h"
 #include "Service.h"
 #include "SocketHelper.h"
-
-Listener::Listener()
-{
-	iocpHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, NULL);
-}
+#include "IocpCore.h"
+#include "Session.h"
 
 Listener::~Listener()
 {
 	CloseSocket();
 }
 
-bool Listener::StartAccept(Service& service)
+bool Listener::StartAccept(Service* service)
 {
 	socket = SocketHelper::CreateSocket();
 	if (socket == INVALID_SOCKET)
@@ -25,7 +22,10 @@ bool Listener::StartAccept(Service& service)
 	if (!SocketHelper::SetLinger(socket, 0, 0))
 		return false;
 
-	if (!SocketHelper::Bind(socket, service.GetSockAddr()))
+	ULONG_PTR key = 0;
+	service->GetIocpCore()->Register((HANDLE)socket, key);
+
+	if (!SocketHelper::Bind(socket, service->GetSockAddr()))
 		return false;
 	
 	if (!SocketHelper::Listen(socket))
@@ -33,21 +33,16 @@ bool Listener::StartAccept(Service& service)
 
 	printf("Listening...");
 
-	if (!SocketHelper::SetIOControl(socket, WSAID_ACCEPTEX, (LPVOID*)lpfnAcceptEx))
-		return false;
-
 	SOCKET acceptSocket = SocketHelper::CreateSocket();
 	if (acceptSocket == INVALID_SOCKET)
 		return false;
 
-	ULONG_PTR key = 0;
-	CreateIoCompletionPort((HANDLE)socket, iocpHandle, key, 0);
+	Session* session = new Session;
+	session->socket = acceptSocket;
 
-	char lpOutputBuf[1024];
-	WSAOVERLAPPED overlapped = {};
 	DWORD dwBytes = 0;
 
-	if (!lpfnAcceptEx(socket, acceptSocket, lpOutputBuf, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &overlapped))
+	if (!SocketHelper::AcceptEx(socket, acceptSocket, lpOutputBuf, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &overlapped))
 	{
 		if (WSAGetLastError() != ERROR_IO_PENDING)
 		{

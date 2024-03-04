@@ -6,7 +6,8 @@ LPFN_ACCEPTEX SocketHelper::AcceptEx = NULL;
 bool SocketHelper::StartUp()
 {
     WSAData wsaData;
-    return WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+        return false;
     // != 0 == error : return false; not error: return true;
 
     SOCKET tempSocklet = CreateSocket();
@@ -42,6 +43,11 @@ bool SocketHelper::SetLinger(SOCKET socket, u_short onOff, u_short time)
     linger.l_linger = time;
     linger.l_onoff = onOff;
     return SetSocketOpt(socket, SOL_SOCKET, SO_LINGER, linger);
+}
+
+bool SocketHelper::SetUpdateAcceptSocket(SOCKET acceptSocket, SOCKET listenSocket)
+{
+    return SetSocketOpt(acceptSocket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, listenSocket);
 }
 
 bool SocketHelper::Bind(SOCKET socket, SOCKADDR_IN sockAddr)

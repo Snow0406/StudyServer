@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "IocpCore.h"'
 #include "Session.h"
+#include "IocpEvent.h"
+#include "IocpObj.h"
 
 IocpCore::IocpCore()
 {
@@ -12,22 +14,31 @@ IocpCore::~IocpCore()
 	CloseHandle(iocpHandle);
 }
 
-void IocpCore::Register(HANDLE socket, ULONG_PTR key)
+void IocpCore::Register(class IocpObj* iocpObj)
 {
-	CreateIoCompletionPort((HANDLE)socket, iocpHandle, key, 0);
+	CreateIoCompletionPort(iocpObj->GetHandle(), iocpHandle, 0, 0);
 }
 
 bool IocpCore::ObserverIO(DWORD time)
 {
 	DWORD bytesTransferred = 0;
 	ULONG_PTR key = 0;
-	WSAOVERLAPPED* overlapped = {};
+	IocpEvent* iocpEvent = NULL;
 
-		if (GetQueuedCompletionStatus(iocpHandle, &bytesTransferred, &key, (LPOVERLAPPED*)&overlapped, INFINITE))
+		if (GetQueuedCompletionStatus(iocpHandle, &bytesTransferred, &key, (LPOVERLAPPED*)&iocpEvent, time))
 		{
-			printf("Client Connected...\n");
+			IocpObj* iocpObj = iocpEvent->iocpObj;
+			iocpObj->ObserveIO(iocpEvent, bytesTransferred);
+			//printf("Client Connected...\n");
 		}
 		else {
+			switch (GetLastError())
+			{
+			case WAIT_TIMEOUT:
+				return false;
+			default:
+				break;
+			}
 			printf("GetQueuedCompletionStatus Error : %d\n", WSAGetLastError());
 			return false;
 		}

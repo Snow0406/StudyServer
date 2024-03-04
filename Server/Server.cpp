@@ -22,6 +22,8 @@ int main()
 
 	t.join();
 
+	delete service;
+
 	return 0;
 
 

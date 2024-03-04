@@ -13,15 +13,16 @@ public:
 	//Socket Option
 	static bool SetReuseAddress(SOCKET socket, bool enable);
 	static bool SetLinger(SOCKET socket, u_short onOff, u_short time);
+	//listenSocket Á¤º¸, acceptSocket ¾÷µ«
+	static bool SetUpdateAcceptSocket(SOCKET acceptSocket, SOCKET listenSocket);
 public:
 	static bool Bind(SOCKET socket, SOCKADDR_IN sockAddr);
 	static bool Listen(SOCKET socket, int backlog = SOMAXCONN);
 	static void CloseSocket(SOCKET& socket);
-
-	template<typename T>
-	static inline bool SetSocketOpt(SOCKET socket, int level, int optName, T optVal) {
-		return setsockopt(socket, level, optName, (char*)&optVal, sizeof(optVal) == SOCKET_ERROR);
-	}
-
 };
 
+template<typename T>
+static inline bool SetSocketOpt(SOCKET socket, int level, int optName, T optVal)
+{
+	return setsockopt(socket, level, optName, (char*)&optVal, sizeof(T)) != SOCKET_ERROR;
+}

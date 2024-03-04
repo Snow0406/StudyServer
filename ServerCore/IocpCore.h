@@ -9,7 +9,7 @@ public:
 public:
 	HANDLE GetHandle() { return iocpHandle;  }
 public:
-	void Register(HANDLE socket, ULONG_PTR key);
+	void Register(class IocpObj* iocpObj);
 	bool ObserverIO(DWORD time = INFINITE);
 };
 

@@ -4,6 +4,7 @@
 #include "SocketHelper.h"
 #include "IocpCore.h"
 #include "Session.h"
+#include "IocpEvent.h"
 
 Listener::~Listener()
 {
@@ -23,7 +24,7 @@ bool Listener::StartAccept(Service* service)
 		return false;
 
 	ULONG_PTR key = 0;
-	service->GetIocpCore()->Register((HANDLE)socket, key);
+	service->GetIocpCore()->Register(this);
 
 	if (!SocketHelper::Bind(socket, service->GetSockAddr()))
 		return false;
@@ -33,22 +34,9 @@ bool Listener::StartAccept(Service* service)
 
 	printf("Listening...");
 
-	SOCKET acceptSocket = SocketHelper::CreateSocket();
-	if (acceptSocket == INVALID_SOCKET)
-		return false;
-
-	Session* session = new Session;
-	session->socket = acceptSocket;
-
-	DWORD dwBytes = 0;
-
-	if (!SocketHelper::AcceptEx(socket, acceptSocket, lpOutputBuf, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &overlapped))
-	{
-		if (WSAGetLastError() != ERROR_IO_PENDING)
-		{
-			return false;
-		}
-	}
+	AcceptEvent* acceptEvent = new AcceptEvent();
+	acceptEvent->iocpObj = this;
+	RegisterAccpet(acceptEvent);
 
 
     return true;
@@ -57,4 +45,46 @@ bool Listener::StartAccept(Service* service)
 void Listener::CloseSocket()
 {
 	SocketHelper::CloseSocket(socket);
+}
+
+void Listener::RegisterAccpet(AcceptEvent* acceptEvent)
+{
+	Session* session = new Session;
+	acceptEvent->Init();
+	acceptEvent->session = session;
+
+	DWORD dwBytes = 0;
+
+	if (!SocketHelper::AcceptEx(socket, session->GetSOcket(), session->recvBuffer, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, (LPOVERLAPPED)acceptEvent))
+	{
+		if (WSAGetLastError() != ERROR_IO_PENDING)
+		{
+			RegisterAccpet(acceptEvent);
+		}
+	}
+}
+
+void Listener::ProcessAccept(AcceptEvent* acceptEvent)
+{
+	Session* session = acceptEvent->session;
+	if (!SocketHelper::SetUpdateAcceptSocket(session->GetSOcket(), socket))
+	{
+		printf("SetUpdateAcceptSocket Error");
+		RegisterAccpet(acceptEvent);
+		return;
+	}
+
+	printf("Client Connected");
+}
+
+HANDLE Listener::GetHandle()
+{
+	return (HANDLE)socket;
+}
+
+void Listener::ObserveIO(IocpEvent* iocpEvent, int numOfBytes)
+{
+	AcceptEvent* acceptEvent = (AcceptEvent*)iocpEvent;
+	ProcessAccept(acceptEvent);
+
 }

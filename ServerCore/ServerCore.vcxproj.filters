@@ -30,6 +30,10 @@
     <ClInclude Include="Session.h">
       <Filter>NetWork</Filter>
     </ClInclude>
+    <ClInclude Include="IocpEvent.h">
+      <Filter>NetWork</Filter>
+    </ClInclude>
+    <ClInclude Include="IocpObj.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -53,5 +57,9 @@
     <ClCompile Include="Session.cpp">
       <Filter>NetWork</Filter>
     </ClCompile>
+    <ClCompile Include="IocpEvent.cpp">
+      <Filter>NetWork</Filter>
+    </ClCompile>
+    <ClCompile Include="IocpObj.cpp" />
   </ItemGroup>
 </Project>

@@ -74,7 +74,19 @@ void Listener::ProcessAccept(AcceptEvent* acceptEvent)
 		return;
 	}
 
-	printf("Client Connected");
+	SOCKADDR_IN sockAddr;
+	int sockAddrSize = sizeof(sockAddr);
+
+	if (getpeername(session->GetSOcket(), (SOCKADDR*)&sockAddr, &sockAddrSize) == SOCKET_ERROR)
+	{
+		printf("getpeername Error\n");
+		RegisterAccpet(acceptEvent);
+		return;
+	}
+
+	session->SetSockAddr(sockAddr);
+	session->ProcessConnect();
+	RegisterAccpet(acceptEvent);
 }
 
 HANDLE Listener::GetHandle()

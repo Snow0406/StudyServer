@@ -2,6 +2,10 @@
 class IocpCore;
 class Listener;
 
+enum class ServiceType : u_char {
+
+};
+
 class Service
 {
 private:

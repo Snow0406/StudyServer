@@ -1,13 +1,15 @@
 #pragma once
 
-enum class EventType : u_char {
+enum class EventType : u_char
+{
 	CONNECT,
 	DISCONNECT,
 	ACCEPT,
 	RECV,
-	SEND
-
+	SEND,
 };
+
+class Session;
 
 class IocpEvent : public OVERLAPPED
 {
@@ -19,12 +21,20 @@ public:
 public:
 	void Init();
 };
-class Session;
-class AcceptEvent : public IocpEvent {
-public:
-	Session* session = NULL;
-public:
 
+
+class AcceptEvent : public IocpEvent
+{
+public:
+	Session* session = nullptr;
+public:
 	AcceptEvent() : IocpEvent(EventType::ACCEPT) {}
 };
 
+//Recv Ãß°¡
+class RecvEvent : public IocpEvent
+{
+public:
+	RecvEvent() : IocpEvent(EventType::RECV) {}
+
+};

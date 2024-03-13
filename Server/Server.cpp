@@ -5,7 +5,9 @@
 
 class ServerSession : public Session
 {
-	//Todo
+	virtual void OnConnected() override {
+		cout << "Server Session" << endl;
+	}
 
 };
 

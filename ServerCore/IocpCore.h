@@ -7,9 +7,8 @@ public:
 	IocpCore();
 	~IocpCore();
 public:
-	HANDLE GetHandle() { return iocpHandle;  }
+	HANDLE GetHandle() const { return iocpHandle; }
 public:
-	void Register(class IocpObj* iocpObj);
-	bool ObserverIO(DWORD time = INFINITE);
+	bool Register(class IocpObj* iocpObj);  // bool·Î ¹Ù²Þ
+	bool ObserveIO(DWORD time = INFINITE);
 };
-

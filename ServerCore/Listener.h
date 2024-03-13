@@ -1,18 +1,22 @@
 #pragma once
 #include "IocpObj.h"
 
+class ServerService;
+class AcceptEvent;
+
 class Listener : public IocpObj
 {
 private:
+	ServerService* serverService = nullptr;
 	SOCKET socket = INVALID_SOCKET;
 public:
 	Listener() = default;
-	~Listener();
+	virtual ~Listener();
 public:
-	bool StartAccept(class Service* service);
+	bool StartAccept(ServerService* service);
 	void CloseSocket();
 public:
-	void RegisterAccpet(class AcceptEvent* acceptEvent); //Accept 등록
+	void RegisterAccept(AcceptEvent* acceptEvent); //Accept 등록
 	void ProcessAccept(AcceptEvent* acceptEvent); //Accept 진행
 
 	// Inherited via IocpObj

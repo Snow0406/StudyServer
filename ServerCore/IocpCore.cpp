@@ -1,11 +1,11 @@
 #include "pch.h"
-#include "IocpCore.h"'
-#include "Session.h"
+#include "IocpCore.h"
 #include "IocpEvent.h"
 #include "IocpObj.h"
 
 IocpCore::IocpCore()
 {
+	//»ý¼º
 	iocpHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, NULL);
 }
 
@@ -14,33 +14,42 @@ IocpCore::~IocpCore()
 	CloseHandle(iocpHandle);
 }
 
-void IocpCore::Register(class IocpObj* iocpObj)
+bool IocpCore::Register(IocpObj* iocpObj)
 {
+	if (iocpObj->GetHandle() == nullptr)
+		return false;
+
 	CreateIoCompletionPort(iocpObj->GetHandle(), iocpHandle, 0, 0);
+
+	return true;
 }
 
-bool IocpCore::ObserverIO(DWORD time)
+bool IocpCore::ObserveIO(DWORD time)
 {
 	DWORD bytesTransferred = 0;
 	ULONG_PTR key = 0;
-	IocpEvent* iocpEvent = NULL;
+	IocpEvent* iocpEvent = nullptr;
 
-		if (GetQueuedCompletionStatus(iocpHandle, &bytesTransferred, &key, (LPOVERLAPPED*)&iocpEvent, time))
+	if (GetQueuedCompletionStatus(iocpHandle, &bytesTransferred, &key, (LPOVERLAPPED*)&iocpEvent, time))
+	{
+		IocpObj* iocpObj = iocpEvent->iocpObj;
+		iocpObj->ObserveIO(iocpEvent, bytesTransferred);
+	}
+	else
+	{
+		switch (GetLastError())
 		{
-			IocpObj* iocpObj = iocpEvent->iocpObj;
-			iocpObj->ObserveIO(iocpEvent, bytesTransferred);
-			//printf("Client Connected...\n");
-		}
-		else {
-			switch (GetLastError())
-			{
-			case WAIT_TIMEOUT:
-				return false;
-			default:
-				break;
-			}
-			printf("GetQueuedCompletionStatus Error : %d\n", WSAGetLastError());
+		case WAIT_TIMEOUT:
 			return false;
+		default:
+			break;
 		}
+
+		return false;
+	}
+
+
+	//Todo
+
 	return true;
 }

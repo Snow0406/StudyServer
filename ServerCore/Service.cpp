@@ -4,7 +4,7 @@
 #include "IocpCore.h"
 #include "Listener.h"
 
-Service::Service(wstring ip, u_short port)
+Service::Service(ServiceType type, wstring ip, u_short port, SessionFactory factory) : serviceType(type), sessionFactory(factory)
 {
 	if (!SocketHelper::StartUp())
 		return;
@@ -31,8 +31,28 @@ Service::~Service()
 	}
 }
 
-bool Service::Start()
+Session* Service::CreateSession()
 {
-	listener = new Listener;
-	return listener->StartAccept(this);
+	Session* session = sessionFactory();
+
+	if (!iocpCore->Register(session))
+	{
+		return nullptr;
+	}
+
+	return session;
+}
+
+void Service::AddSession(Session* session)
+{
+	unique_lock<shared_mutex> lock(rwLock);
+	sessionCount++;
+	sessions.insert(session);
+}
+
+void Service::RemoveSession(Session* session)
+{
+	unique_lock<shared_mutex> lock(rwLock);
+	sessions.erase(session);
+	sessionCount--;
 }

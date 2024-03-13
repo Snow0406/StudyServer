@@ -12,7 +12,7 @@ public:
 	Session();
 	virtual ~Session();
 public:
-	SOCKET GetSOcket() { return socket; }
+	SOCKET GetSocket() { return socket; }
 public:
 	void SetSockAddr(SOCKADDR_IN address) { sockAddr = address; }
 public:

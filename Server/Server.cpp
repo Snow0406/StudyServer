@@ -1,12 +1,19 @@
 #include "pch.h"
-#include <Service.h>
+#include <ServerService.h>
+#include <Session.h>
 #include <IocpCore.h>
+
+class ServerSession : public Session
+{
+	//Todo
+
+};
 
 int main()
 {
 	printf("============= SERVER =============\n");
 
-	Service* service = new Service(L"127.0.0.1", 27015);
+	Service* service = new ServerService(L"127.0.0.1", 27015, []() {return new ServerSession; });
 
 	if (!service->Start())
 	{

@@ -35,6 +35,7 @@
     </ClInclude>
     <ClInclude Include="IocpObj.h" />
     <ClInclude Include="ServerService.h" />
+    <ClInclude Include="ClientService.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -63,5 +64,6 @@
     </ClCompile>
     <ClCompile Include="IocpObj.cpp" />
     <ClCompile Include="ServerService.cpp" />
+    <ClCompile Include="ClientService.cpp" />
   </ItemGroup>
 </Project>
